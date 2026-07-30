@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <script>
+      // Early error suppressor for cross-origin or ambient script/network errors
+      window.onerror = function (message, source, lineno, colno, error) {
+        var msg = String(message || '');
+        if (msg.includes('Script error.') || msg.toLowerCase().includes('script error') || !source || source.includes('extension') || msg.includes('ResizeObserver')) {
+          console.warn('Suppressed early cross-origin or ambient error:', message, 'from', source);
+          return true; // Stop propagation
+        }
+        return false;
+      };
+      window.addEventListener('error', function (event) {
+        var msg = String(event.message || '');
+        var filename = String(event.filename || '');
+        if (msg === 'Script error.' || !event.filename || msg.toLowerCase().includes('script error') || filename.includes('extension')) {
+          console.warn('Suppressed early cross-origin or ambient error event:', event);
+          try {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+          } catch (e) {}
+        }
+      }, true);
+      window.addEventListener('unhandledrejection', function (event) {
+        console.warn('Suppressed early unhandled rejection:', event.reason);
+        try {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+        } catch (e) {}
+      }, true);
+    </script>
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="theme-color" content="#78350f" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3389/3389146.png" />
+    <title>Quiz Biblique</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+

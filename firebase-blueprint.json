@@ -1,0 +1,101 @@
+{
+  "entities": {
+    "player": {
+      "title": "Player",
+      "description": "A player profile with statistics and customization settings",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier of the player"
+        },
+        "name": {
+          "type": "string",
+          "description": "Unique name of the player"
+        },
+        "gamesPlayed": {
+          "type": "integer",
+          "description": "Number of games played by the player"
+        },
+        "maxStageReached": {
+          "type": "string",
+          "description": "The highest game stage reached by the player"
+        },
+        "highScore": {
+          "type": "integer",
+          "description": "Highest score achieved by the player"
+        },
+        "avatarEmoji": {
+          "type": "string",
+          "description": "Emoji used for player's avatar profile picture"
+        },
+        "avatarColor": {
+          "type": "string",
+          "description": "Tailwind color classes used for player's avatar background"
+        },
+        "avatarName": {
+          "type": "string",
+          "description": "Name designation of the avatar choice"
+        },
+        "scoresHistory": {
+          "type": "array",
+          "description": "History of the last 5 scores obtained by this player with the date of achievement",
+          "items": {
+            "type": "object",
+            "properties": {
+              "score": {
+                "type": "integer"
+              },
+              "date": {
+                "type": "string"
+              },
+              "stageReached": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "required": ["id", "name", "gamesPlayed", "maxStageReached", "highScore"]
+    },
+    "game_save": {
+      "title": "GameSave",
+      "description": "The active saved state of a game being played",
+      "type": "object",
+      "properties": {
+        "playerId": {
+          "type": "string",
+          "description": "The ID of the player this save belongs to"
+        },
+        "stage": {
+          "type": "string",
+          "description": "The current game stage when saved"
+        },
+        "score": {
+          "type": "integer",
+          "description": "The score when saved"
+        },
+        "currentPoints": {
+          "type": "integer",
+          "description": "The score of points in the current round when saved"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the game was saved"
+        }
+      },
+      "required": ["playerId", "stage", "score", "currentPoints", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/players/{playerId}": {
+      "schema": "player",
+      "description": "Collection of players participating in the biblic quiz"
+    },
+    "/saves/{playerId}": {
+      "schema": "game_save",
+      "description": "Active saved games indexed by the player ID"
+    }
+  }
+}

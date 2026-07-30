@@ -1,0 +1,6 @@
+{
+  "name": "Le Quiz de l'Alliance",
+  "description": "Un jeu de quiz biblique épique inspiré du format 'Questions pour un Champion', proposant trois étapes de défis : Les 9 à la suite, Le 4 à la suite et le Face-à-Face Final.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
