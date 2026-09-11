@@ -1132,10 +1132,10 @@ function GameContent() {
 
       {/* Main Game Stage Container */}
       <main className={cn(
-        "flex-1 relative flex flex-col items-center justify-center z-10 overflow-y-auto w-full mx-auto transition-all duration-500 ease-out",
+        "flex-1 relative flex flex-col items-center justify-start z-10 overflow-y-auto w-full mx-auto transition-all duration-500 ease-out",
         displayMode === 'phone'
-          ? "max-w-[420px] bg-slate-950/60 border-[8px] border-slate-800/95 rounded-[40px] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.95)] p-5 my-4 relative"
-          : "max-w-5xl p-6 my-2"
+          ? "max-w-[420px] bg-slate-950/60 border-[8px] border-slate-800/95 rounded-[40px] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.95)] p-3 sm:p-5 my-1 sm:my-4 relative"
+          : "max-w-5xl px-3 sm:px-6 py-2 sm:py-4"
       )}>
         {displayMode === 'phone' && (
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-28 h-4 bg-slate-800 rounded-b-xl z-50 flex items-center justify-center gap-1.5 pointer-events-none border-b border-x border-slate-700/30">

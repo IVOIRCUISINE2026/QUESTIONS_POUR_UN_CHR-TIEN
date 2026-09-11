@@ -547,62 +547,48 @@ const FALLBACKS: any = {
 async function generateContentWithRetry(options: {
   contents: any;
   config: any;
-  retries?: number;
-  initialDelay?: number;
 }) {
-  const { contents, config, retries = 2, initialDelay = 800 } = options;
-  let delay = initialDelay;
+  const { contents, config } = options;
+  const ai = getAI();
+  if (!ai) {
+    throw new Error("GEMINI_API_KEY is missing");
+  }
 
-  // Try gemini-3.5-flash first with fast retries
-  for (let attempt = 1; attempt <= retries; attempt++) {
+  // Model cascade: prioritize fast, highly-available models first
+  // gemini-3.1-flash-lite and gemini-flash-latest are proven resilient against 503 high-demand spikes
+  const candidateModels = ["gemini-3.1-flash-lite", "gemini-flash-latest", "gemini-3.8-flash"];
+
+  let lastError: any = null;
+
+  for (const model of candidateModels) {
     try {
-      const ai = getAI();
-      if (!ai) {
-        throw new Error("GEMINI_API_KEY is missing");
-      }
       const result = await ai.models.generateContent({
-        model: "gemini-3.5-flash",
+        model,
         contents,
         config,
       });
       return result;
     } catch (error: any) {
+      lastError = error;
       const code = error.status || (error.response?.status) || 500;
       const msg = (error.message || String(error)).toLowerCase();
-      
-      const isHardQuotaLimit = code === 429 && (msg.includes("quota") || msg.includes("plan") || msg.includes("billing"));
-      const isRetriable = !isHardQuotaLimit && (code === 503 || code === 429 || msg.includes("high demand") || msg.includes("overloaded"));
 
-      if (isRetriable && attempt < retries) {
-        console.warn(`[GEMINI 3.5 ATTEMPT ${attempt}] Transient error ${code} encountered: ${msg.substring(0, 80)}. Retrying in ${delay}ms...`);
-        await new Promise((resolve) => setTimeout(resolve, delay));
-        delay *= 1.5;
-      } else {
-        console.warn(`[GEMINI 3.5 FAILED] Falling back to gemini-3.1-flash-lite. Error: ${msg.substring(0, 80)}`);
+      // If high demand 503 or temporary 429, seamlessly try next model
+      const isTransient = code === 503 || code === 429 || msg.includes("high demand") || msg.includes("unavailable") || msg.includes("overloaded");
+
+      if (isTransient) {
+        console.log(`[AI ROUTING] Model ${model} temporarily busy (${code}). Switching to alternative model...`);
+        continue;
+      }
+
+      // If hard auth/key issue, no point in cycling through models
+      if (code === 401 || code === 403) {
         break;
       }
     }
   }
 
-  // Fallback to gemini-3.1-flash-lite
-  try {
-    const ai = getAI();
-    if (!ai) {
-      throw new Error("GEMINI_API_KEY is missing");
-    }
-    const result = await ai.models.generateContent({
-      model: "gemini-3.1-flash-lite",
-      contents,
-      config,
-    });
-    console.log("[GEMINI 3.1 SUCCESS] Successfully generated content using fallback model gemini-3.1-flash-lite.");
-    return result;
-  } catch (fallbackError: any) {
-    const code = fallbackError.status || (fallbackError.response?.status) || 500;
-    const msg = (fallbackError.message || String(fallbackError)).toLowerCase();
-    console.warn(`[GEMINI 3.1 FAILED] Fallback model also failed with code ${code}: ${msg.substring(0, 80)}`);
-    throw fallbackError;
-  }
+  throw lastError || new Error("All candidate models failed");
 }
 
 const inMemoryCache: Record<string, any[]> = {};
@@ -800,11 +786,23 @@ app.post("/api/questions/generate", async (req, res) => {
         systemInstruction,
         responseMimeType: "application/json",
         responseSchema,
-        temperature: 1.15
+        temperature: 1.0
       }
     });
 
-    const data = JSON.parse(result?.text || "[]");
+    let rawText = (result?.text || "").trim();
+    if (rawText.startsWith("```json")) {
+      rawText = rawText.replace(/^```json\s*/i, "").replace(/\s*```$/, "").trim();
+    } else if (rawText.startsWith("```")) {
+      rawText = rawText.replace(/^```\s*/, "").replace(/\s*```$/, "").trim();
+    }
+
+    let data: any[] = [];
+    try {
+      data = JSON.parse(rawText || "[]");
+    } catch {
+      data = [];
+    }
     
     // Store in cache
     if (Array.isArray(data) && data.length > 0) {
@@ -836,15 +834,16 @@ app.post("/api/questions/generate", async (req, res) => {
     }
     res.json(finalQuestions);
   } catch (error: any) {
-    const msg = error.message || String(error);
     const code = error.status || (error.response?.status) || 500;
     
     if (code === 429) {
-      console.warn(`[GEMINI QUOTA] Limite atteinte. Conseil: Vérifiez votre clé d'API dans Paramètres ou patientez car vous utilisez le quota gratuit.`);
+      console.log(`[GEMINI STATUS] Quota limite ou pause temporaire (429). Activation du relais hors-ligne.`);
+    } else if (code === 503) {
+      console.log(`[GEMINI STATUS] Modèles IA occupés (503). Activation de la banque de questions bibliques.`);
     } else if (code === 403 || code === 401) {
-      console.warn(`[GEMINI KEY] Clé API invalide ou non configurée.`);
+      console.log(`[GEMINI STATUS] Mode hors-ligne actif (clé API non active ou restreinte).`);
     } else {
-      console.warn(`Gemini Error (${code}):`, msg.substring(0, 100) + "...");
+      console.log(`[GEMINI STATUS] Service indisponible (${code}). Basculement vers la banque de questions.`);
     }
     
     // Check if we have ANYTHING in cache for this SPECIFIC stage/theme

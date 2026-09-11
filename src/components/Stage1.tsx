@@ -646,11 +646,11 @@ export default function Stage1({ playerName, onComplete, offlineMode }: { player
       )}
       
       {/* Qualification Spots Tracker Header */}
-      <div className="w-full max-w-xl text-center mb-6">
-        <div className="inline-block px-3 py-1 bg-slate-900/80 border border-slate-700 rounded-full mb-3 text-[10px] font-black uppercase tracking-[0.25em] text-slate-300">
+      <div className="w-full max-w-xl text-center mb-2 md:mb-5">
+        <div className="inline-block px-3 py-0.5 md:py-1 bg-slate-900/80 border border-slate-700 rounded-full mb-1.5 md:mb-3 text-[9px] md:text-[10px] font-black uppercase tracking-[0.25em] text-slate-300">
           Places de qualification : <span className="text-amber-accent font-black text-xs">{qualifiedRankings.length} / 4</span> pour la finale
         </div>
-        <div className="flex justify-center gap-2">
+        <div className="flex justify-center gap-1.5 md:gap-2">
           {Array.from({ length: 4 }).map((_, i) => {
             const qualifiedName = qualifiedRankings[i];
             const isFilled = !!qualifiedName;
@@ -658,7 +658,7 @@ export default function Stage1({ playerName, onComplete, offlineMode }: { player
               <div 
                 key={i} 
                 className={cn(
-                  "px-3 py-2 rounded-sm border flex items-center justify-center text-[10px] font-black tracking-tight uppercase min-w-[100px] transition-all duration-300 truncate text-ellipsis",
+                  "px-2 md:px-3 py-1 md:py-1.5 rounded-sm border flex items-center justify-center text-[9px] md:text-[10px] font-black tracking-tight uppercase min-w-[70px] sm:min-w-[85px] md:min-w-[100px] transition-all duration-300 truncate text-ellipsis",
                   isFilled 
                     ? "bg-amber-400/10 border-amber-500 text-amber-accent shadow-[0_0_10px_rgba(245,158,11,0.2)]" 
                     : "bg-slate-950/40 border-slate-800 text-slate-600"
@@ -671,12 +671,12 @@ export default function Stage1({ playerName, onComplete, offlineMode }: { player
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 w-full max-w-4xl items-start">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-1.5 sm:gap-2 md:gap-6 w-full max-w-4xl items-start">
         
         {/* Players Sidebar Standing List */}
-        <div className="md:col-span-1 space-y-2 bg-slate-950/20 p-4 rounded-xl border border-slate-800/40 relative">
-          <p className="text-[9px] uppercase tracking-widest text-slate-400 font-black mb-3">CONCURRENTS</p>
-          <div className="flex md:flex-col gap-2 overflow-x-auto md:overflow-visible pb-2 md:pb-0 scrollbar-none">
+        <div className="md:col-span-1 space-y-1 md:space-y-2 bg-slate-950/30 p-2 sm:p-2.5 md:p-4 rounded-xl border border-slate-800/50 relative shadow-sm">
+          <p className="text-[8px] md:text-[9px] uppercase tracking-widest text-slate-400 font-black mb-1 md:mb-3 px-0.5">CONCURRENTS</p>
+          <div className="flex md:flex-col gap-1.5 sm:gap-2 overflow-x-auto md:overflow-visible pb-0.5 md:pb-0 scrollbar-none">
             {players.map((p) => {
               const isFirstTimeQualified = p.isQualified && qualifiedRankings.includes(p.name);
               const lostStreak = justLostStreakId === p.id;
@@ -687,45 +687,45 @@ export default function Stage1({ playerName, onComplete, offlineMode }: { player
                   animate={lostStreak ? { x: [-8, 8, -6, 6, -4, 4, 0] } : {}}
                   transition={{ duration: 0.8 }}
                   className={cn(
-                    "flex-1 md:flex-initial p-3 rounded-lg border-2 flex flex-col md:flex-row items-center md:justify-between gap-2 md:gap-3 transition-all duration-300 min-w-[110px] md:min-w-0 md:w-full relative",
+                    "flex-1 md:flex-initial p-2 md:p-3 rounded-lg border-2 flex flex-col md:flex-row items-center md:justify-between gap-1 md:gap-3 transition-all duration-300 min-w-[95px] sm:min-w-[110px] md:min-w-0 md:w-full relative",
                     p.id === 'human' 
-                      ? "border-amber-500/50 bg-gradient-to-r from-amber-500/5 to-transparent" 
-                      : "border-slate-800 bg-slate-900/40",
-                    p.isQualified ? "border-green-500/40 bg-green-500/5" : ""
+                      ? "border-amber-500/60 bg-gradient-to-r from-amber-500/10 to-transparent shadow-[0_0_8px_rgba(245,158,11,0.1)]" 
+                      : "border-slate-800 bg-slate-900/60",
+                    p.isQualified ? "border-green-500/50 bg-green-500/10" : ""
                   )}
                 >
-                  <div className="flex flex-col md:flex-row items-center gap-2">
+                  <div className="flex flex-col md:flex-row items-center gap-1 md:gap-2">
                     <div 
-                      className="w-4 h-4 rounded-full border border-white/20 shadow-sm shrink-0" 
+                      className="w-3.5 h-3.5 md:w-4 md:h-4 rounded-full border border-white/30 shadow-sm shrink-0" 
                       style={{ backgroundColor: p.avatarColor }} 
                     />
                     <div className="text-center md:text-left truncate">
-                      <p className="font-sans font-black text-xs uppercase tracking-tight text-white inline-flex items-center gap-1">
-                        {p.name}
-                        {p.id === 'human' && <span className="text-[8px] bg-amber-500 text-black px-1 rounded-sm">MOI</span>}
+                      <p className="font-sans font-black text-xs md:text-xs uppercase tracking-tight text-white inline-flex items-center gap-1 leading-tight">
+                        <span className="truncate max-w-[70px] sm:max-w-[90px] md:max-w-none">{p.name}</span>
+                        {p.id === 'human' && <span className="text-[7.5px] bg-amber-500 text-black px-1 rounded-xs font-black">MOI</span>}
                       </p>
                       
                       {/* 9 gold streak boxes */}
                       {!p.isQualified ? (
-                        <div className="flex gap-0.5 mt-1 justify-center md:justify-start">
+                        <div className="flex gap-0.5 mt-0.5 md:mt-1 justify-center md:justify-start">
                           {Array.from({ length: 9 }).map((_, si) => (
                             <div 
                               key={si} 
                               className={cn(
                                 "w-1.5 h-1.5 rounded-full transition-all duration-300",
                                 si < p.points 
-                                  ? "bg-amber-400 shadow-[0_0_5px_rgba(245,158,11,0.5)] scale-110" 
+                                  ? "bg-amber-400 shadow-[0_0_5px_rgba(245,158,11,0.6)] scale-110" 
                                   : "bg-slate-700"
                               )}
                             />
                           ))}
                         </div>
                       ) : (
-                        <p className="text-[9px] text-green-400 font-black tracking-widest mt-0.5">QUALIFIÉ(E)</p>
+                        <p className="text-[8.5px] md:text-[9px] text-green-400 font-black tracking-widest mt-0.5">QUALIFIÉ(E)</p>
                       )}
                     </div>
                   </div>
-                  <div className="font-mono text-[11px] font-black italic select-none shrink-0">
+                  <div className="font-mono text-[10px] md:text-[11px] font-black italic select-none shrink-0 mt-0.5 md:mt-0">
                     {p.isQualified ? "👑" : `${p.points}/9`}
                   </div>
                 </motion.div>
@@ -737,20 +737,20 @@ export default function Stage1({ playerName, onComplete, offlineMode }: { player
         {/* Main Central Game Arena */}
         <div className="md:col-span-3 flex flex-col items-center">
           
-          {/* Circular Countdown Progress Ring */}
-          <div className="mb-6 flex items-center gap-3">
+          {/* Circular Countdown Progress Ring - Compact vertical gap */}
+          <div className="my-1 md:my-0 md:mb-5 flex items-center gap-2.5 md:gap-3">
             <div className={cn(
-              "w-12 h-12 rounded-full border-4 flex items-center justify-center transition-all duration-300 relative overflow-hidden shrink-0",
+              "w-10 h-10 md:w-12 md:h-12 rounded-full border-3 md:border-4 flex items-center justify-center transition-all duration-300 relative overflow-hidden shrink-0",
               timeLeft <= 4 && buzzerState === 'READING' ? "border-red-600 bg-red-950/20 animate-pulse" : "border-electric-blue/40 bg-slate-900/90 shadow-lg"
             )}>
               <span className={cn(
-                "text-base font-sans font-black",
+                "text-sm md:text-base font-sans font-black",
                 timeLeft <= 4 && buzzerState === 'READING' ? "text-red-500" : "text-electric-blue"
               )}>{Math.ceil(timeLeft)}</span>
             </div>
             <div className="text-left select-none">
-              <p className="text-[7px] uppercase tracking-[0.3em] font-black text-slate-500">CHRONOMÈTRE</p>
-              <p className="text-[10px] font-bold text-slate-300">QUESTION EN COURS</p>
+              <p className="text-[7px] uppercase tracking-[0.3em] font-black text-slate-500 leading-tight">CHRONOMÈTRE</p>
+              <p className="text-[9px] md:text-[10px] font-bold text-slate-300 leading-tight">QUESTION EN COURS</p>
             </div>
           </div>
 
@@ -762,7 +762,7 @@ export default function Stage1({ playerName, onComplete, offlineMode }: { player
                exit={{ x: -30, opacity: 0 }}
                transition={{ type: "spring", stiffness: 100, damping: 15 }}
                className={cn(
-                 "glass-panel p-6 w-full relative overflow-hidden border-slate-700/60 shadow-3xl transition-all duration-300 metal-border flex flex-col min-h-[340px]",
+                 "glass-panel p-4 sm:p-6 w-full relative overflow-hidden border-slate-700/60 shadow-3xl transition-all duration-300 metal-border flex flex-col min-h-[260px] sm:min-h-[340px]",
                  feedbackResult === 'correct' ? "border-green-500/40 bg-green-500/5 shadow-[0_0_20px_rgba(34,197,94,0.1)]" : "",
                  feedbackResult === 'wrong' ? "border-red-500/40 bg-red-500/5 shadow-[0_0_20px_rgba(239,68,68,0.1)]" : ""
                )}
@@ -770,19 +770,19 @@ export default function Stage1({ playerName, onComplete, offlineMode }: { player
               <div className="absolute top-0 left-0 h-1 bg-amber-accent transition-all duration-500 ease-out" style={{ width: `${(currentIndex / 40) * 100}%` }} />
               
               {/* Question Category & Text block */}
-              <div className="flex gap-4 mb-6 items-start">
-                <div className="p-3 bg-slate-900 rounded-sm border border-electric-blue/20 shadow-md shrink-0">
-                  <HelpCircle className="w-5 h-5 text-electric-blue" />
+              <div className="flex gap-3 sm:gap-4 mb-3 sm:mb-6 items-start">
+                <div className="p-2 sm:p-3 bg-slate-900 rounded-sm border border-electric-blue/20 shadow-md shrink-0">
+                  <HelpCircle className="w-4 h-4 sm:w-5 sm:h-5 text-electric-blue" />
                 </div>
                 <div className="flex-1">
-                   <p className="text-[9px] uppercase text-amber-accent/80 font-black mb-1.5 tracking-[0.3em]">{currentQ?.category || 'PROPHÈTES & ROIS'}</p>
-                   <h4 className="text-lg md:text-xl font-sans text-white leading-relaxed italic font-bold tracking-tight">
+                   <p className="text-[8px] sm:text-[9px] uppercase text-amber-accent/80 font-black mb-1 sm:mb-1.5 tracking-[0.3em]">{currentQ?.category || 'PROPHÈTES & ROIS'}</p>
+                   <h4 className="text-base sm:text-lg md:text-xl font-sans text-white leading-relaxed italic font-bold tracking-tight">
                      "{currentQ?.question}"
                    </h4>
                    
                    {/* Animated audio speaker while reading */}
                    {buzzerState === 'READING' && (
-                     <div className="mt-2.5 flex items-center gap-1.5 text-slate-500 text-[9px] font-black uppercase tracking-wider select-none">
+                     <div className="mt-2 flex items-center gap-1.5 text-slate-500 text-[8.5px] sm:text-[9px] font-black uppercase tracking-wider select-none">
                        <Volume2 className="w-3.5 h-3.5 text-amber-accent animate-pulse" />
                        <span className="text-slate-400">Voix off en cours...</span>
                        <div className="flex gap-0.5">
@@ -796,7 +796,7 @@ export default function Stage1({ playerName, onComplete, offlineMode }: { player
               </div>
 
               {/* Status banner */}
-              <div className="w-full bg-slate-950/40 border border-slate-800 rounded p-2.5 mb-6 text-center text-slate-300 text-xs tracking-wide">
+              <div className="w-full bg-slate-950/40 border border-slate-800 rounded p-2 sm:p-2.5 mb-3 sm:mb-6 text-center text-slate-300 text-xs tracking-wide">
                 {statusMessage}
               </div>
 
@@ -805,17 +805,17 @@ export default function Stage1({ playerName, onComplete, offlineMode }: { player
                 
                 {/* 1. Idle and Reading: Show buzzer */}
                 {buzzerState === 'READING' && (
-                  <div className="w-full text-center py-2 flex flex-col items-center justify-center">
+                  <div className="w-full text-center py-1 sm:py-2 flex flex-col items-center justify-center">
                     <motion.button
                       whileHover={{ scale: 1.06 }}
                       whileTap={{ scale: 0.95 }}
                       onClick={handleHumanBuzz}
-                      className="w-32 h-32 rounded-full bg-gradient-to-tr from-red-600 via-red-500 to-red-400 shadow-xl shadow-red-500/20 active:shadow-inner border-4 border-white flex flex-col items-center justify-center relative cursor-cell metal-border transition-all animate-pulse"
+                      className="w-28 h-28 sm:w-32 sm:h-32 rounded-full bg-gradient-to-tr from-red-600 via-red-500 to-red-400 shadow-xl shadow-red-500/20 active:shadow-inner border-4 border-white flex flex-col items-center justify-center relative cursor-cell metal-border transition-all animate-pulse"
                     >
-                      <span className="text-black font-black font-sans text-[13px] tracking-widest uppercase leading-tight">BUZZ</span>
-                      <span className="text-[8px] text-red-950 font-black tracking-wider uppercase mt-1">CLIQUEZ</span>
+                      <span className="text-black font-black font-sans text-xs sm:text-[13px] tracking-widest uppercase leading-tight">BUZZ</span>
+                      <span className="text-[7.5px] sm:text-[8px] text-red-950 font-black tracking-wider uppercase mt-0.5 sm:mt-1">CLIQUEZ</span>
                     </motion.button>
-                    <p className="text-[10px] uppercase font-black text-slate-500 mt-4 tracking-[0.2em]">
+                    <p className="text-[9px] sm:text-[10px] uppercase font-black text-slate-500 mt-2.5 sm:mt-4 tracking-[0.2em]">
                       Astuce : pressez la touche <span className="text-slate-300 bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700">[ESPACE]</span> pour buzzer de votre clavier !
                     </p>
                   </div>
