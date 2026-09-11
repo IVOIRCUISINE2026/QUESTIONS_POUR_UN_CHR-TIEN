@@ -60,7 +60,7 @@ export default function Stage1({ playerName, onComplete, offlineMode }: { player
   
   // Timing state
   const [timeLeft, setTimeLeft] = useState(20);
-  const [humanAnswerTimeLeft, setHumanAnswerTimeLeft] = useState(12);
+  const [humanAnswerTimeLeft, setHumanAnswerTimeLeft] = useState(20);
   
   // Interactive inputs and visual feedback
   const [humanAnswerInput, setHumanAnswerInput] = useState('');
@@ -327,8 +327,8 @@ export default function Stage1({ playerName, onComplete, offlineMode }: { player
     setBuzzerState('HUMAN_TYPING');
     setBuzzedPlayer(players.find(p => p.id === 'human') || null);
     setHumanAnswerInput('');
-    setHumanAnswerTimeLeft(12);
-    setStatusMessage('Vous avez buzzé ! Répondez vite !');
+    setHumanAnswerTimeLeft(20);
+    setStatusMessage('Vous avez buzzé ! Vous avez 20 secondes pour répondre.');
   };
 
   // AI buzzes
@@ -823,10 +823,26 @@ export default function Stage1({ playerName, onComplete, offlineMode }: { player
 
                 {/* 2. Human typing his guess */}
                 {buzzerState === 'HUMAN_TYPING' && (
-                  <div className="w-full max-w-sm flex flex-col gap-3">
-                    <div className="flex items-center justify-between text-xs font-black uppercase text-amber-accent/80 mb-1">
+                  <div className="w-full max-w-sm flex flex-col gap-2.5">
+                    <div className="flex items-center justify-between text-xs font-black uppercase text-amber-accent/80">
                       <span>ENTREZ VOTRE RÉPONSE :</span>
-                      <span className="text-red-500 animate-pulse">{humanAnswerTimeLeft}s</span>
+                      <span className={cn(
+                        "font-mono font-black text-sm",
+                        humanAnswerTimeLeft <= 5 ? "text-red-500 animate-pulse" : "text-amber-accent"
+                      )}>
+                        {humanAnswerTimeLeft}s
+                      </span>
+                    </div>
+
+                    {/* Dynamic 20s Progress Bar */}
+                    <div className="w-full bg-slate-900/90 rounded-full h-1.5 overflow-hidden border border-slate-700/60 shadow-inner">
+                      <div 
+                        className={cn(
+                          "h-full transition-all duration-1000 ease-linear rounded-full",
+                          humanAnswerTimeLeft <= 5 ? "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]" : "bg-gradient-to-r from-amber-500 to-amber-300"
+                        )}
+                        style={{ width: `${Math.max(0, Math.min(100, (humanAnswerTimeLeft / 20) * 100))}%` }}
+                      />
                     </div>
 
                     <div className="flex gap-2 relative">
