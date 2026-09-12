@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Check, X, Loader2, HelpCircle, Trophy, Award, Sparkles, Volume2, WifiOff } from 'lucide-react';
+import { Check, X, Loader2, HelpCircle, Trophy, Award, Sparkles, Volume2, WifiOff, FastForward } from 'lucide-react';
 import { Question } from '../types';
 import { useAudio } from './AudioEngine';
 import { cn, getAskedQuestions, addAskedQuestion } from '../lib/utils';
@@ -51,6 +51,16 @@ export default function Stage1({ playerName, onComplete, offlineMode }: { player
   // Players state (1 human + 6 virtual)
   const [players, setPlayers] = useState<PlayerState[]>([]);
   const [qualifiedRankings, setQualifiedRankings] = useState<string[]>([]);
+
+  // Current question points based on number of players already qualified:
+  // 0 qualified -> 1 pt
+  // 1 qualified (1st place won) -> 2 pts
+  // 2 qualified (2nd place won) -> 3 pts
+  // 3 qualified (3rd place won) -> 4 pts
+  const currentQuestionPoints = Math.min(4, qualifiedRankings.length + 1);
+
+  // Check if human player is already qualified and should wait
+  const isHumanQualified = players.find(p => p.id === 'human')?.isQualified || qualifiedRankings.includes(playerName || 'Moi');
   
   // Active buzzer state
   type BuzzerState = 'READING' | 'BUZZED' | 'HUMAN_TYPING' | 'AI_ANSWERING' | 'FEEDBACK' | 'ROUND_END';
@@ -193,12 +203,12 @@ export default function Stage1({ playerName, onComplete, offlineMode }: { player
     }
   }, [buzzerState]);
 
-  // Keyboard support: Press Space to buzz when READING
+  // Keyboard support: Press Space to buzz when READING (only if not qualified)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code === 'Space') {
         const isFocusedOnInput = document.activeElement?.tagName === 'INPUT';
-        if (!isFocusedOnInput && buzzerState === 'READING') {
+        if (!isFocusedOnInput && buzzerState === 'READING' && !isHumanQualified) {
           e.preventDefault();
           handleHumanBuzz();
         }
@@ -206,7 +216,7 @@ export default function Stage1({ playerName, onComplete, offlineMode }: { player
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [buzzerState]);
+  }, [buzzerState, isHumanQualified]);
 
   const fetchQuestions = async (isAppend = false) => {
     if (!isAppend) setLoading(true);
@@ -293,7 +303,7 @@ export default function Stage1({ playerName, onComplete, offlineMode }: { player
   };
 
   const scheduleAiBuzzes = () => {
-    const activeAis = players.filter(p => p.isVirtual && !p.isQualified);
+    const activeAis = players.filter(p => p.isVirtual && !p.isQualified && !qualifiedRankings.includes(p.name));
     const scheduled: ScheduledBuzz[] = [];
 
     activeAis.forEach(ai => {
@@ -320,9 +330,9 @@ export default function Stage1({ playerName, onComplete, offlineMode }: { player
     setScheduledBuzzes(scheduled);
   };
 
-  // Human buzzes
+  // Human buzzes (only if not already qualified)
   const handleHumanBuzz = () => {
-    if (buzzerState !== 'READING') return;
+    if (buzzerState !== 'READING' || isHumanQualified) return;
     playSound('click');
     setBuzzerState('HUMAN_TYPING');
     setBuzzedPlayer(players.find(p => p.id === 'human') || null);
@@ -331,8 +341,9 @@ export default function Stage1({ playerName, onComplete, offlineMode }: { player
     setStatusMessage('Vous avez buzzé ! Vous avez 20 secondes pour répondre.');
   };
 
-  // AI buzzes
+  // AI buzzes (only if not already qualified)
   const handleAiBuzz = (player: PlayerState, isCorrect: boolean) => {
+    if (player.isQualified || qualifiedRankings.includes(player.name)) return;
     setBuzzerState('AI_ANSWERING');
     playSound('system_buzz');
     setBuzzedPlayer(player);
@@ -347,6 +358,12 @@ export default function Stage1({ playerName, onComplete, offlineMode }: { player
       
       setAiAnswerGiven(chosenAnswer);
       setFeedbackResult(isCorrect ? 'correct' : 'wrong');
+
+      if (isCorrect) {
+        setStatusMessage(`Bonne réponse pour ${player.name} ! (+${currentQuestionPoints} point${currentQuestionPoints > 1 ? 's' : ''})`);
+      } else {
+        setStatusMessage(`Mauvaise réponse pour ${player.name} !`);
+      }
 
       setTimeout(() => {
         applyAnswerResult(player.id, isCorrect);
@@ -377,7 +394,7 @@ export default function Stage1({ playerName, onComplete, offlineMode }: { player
 
     if (isCorrect) {
       playSound('success');
-      setStatusMessage('Bonne réponse ! Vous gagnez 1 point.');
+      setStatusMessage(`Bonne réponse ! Vous gagnez ${currentQuestionPoints} point${currentQuestionPoints > 1 ? 's' : ''}.`);
     } else {
       playSound('fail');
       setStatusMessage(`Mauvaise réponse ! La bonne réponse était : "${currentQ?.answer}".`);
@@ -405,11 +422,15 @@ export default function Stage1({ playerName, onComplete, offlineMode }: { player
       let isFirstTimeQualifying = false;
       let targetPlayerName = '';
 
+      // Rule: After 1st player qualifies -> 2 pts; after 2nd -> 3 pts; after 3rd -> 4 pts.
+      const currentQualifiedCount = prevPlayers.filter(p => p.isQualified).length;
+      const pointsToAdd = Math.min(4, currentQualifiedCount + 1);
+
       const updated = prevPlayers.map(p => {
         if (p.id === playerId) {
           targetPlayerName = p.name;
           if (isCorrect) {
-            const nextPoints = p.points + 1;
+            const nextPoints = Math.min(9, p.points + pointsToAdd);
             const reachesQualify = nextPoints >= 9 && !p.isQualified;
             if (reachesQualify) {
               isFirstTimeQualifying = true;
@@ -441,10 +462,15 @@ export default function Stage1({ playerName, onComplete, offlineMode }: { player
           playSound('success');
           
           // If exactly 4 spots are filled, wrap up the stage
-          if (nextRank.length === 4) {
+          if (nextRank.length >= 4) {
             setTimeout(() => {
               setBuzzerState('ROUND_END');
               setStatusMessage('Manche terminée ! Nous tenons nos 4 qualifiés !');
+            }, 1000);
+          } else {
+            const nextPts = Math.min(4, nextRank.length + 1);
+            setTimeout(() => {
+              setStatusMessage(`Félicitations à ${targetPlayerName} (${nextRank.length}/4) ! Les questions suivantes valent désormais ${nextPts} points !`);
             }, 1000);
           }
           return nextRank;
@@ -485,8 +511,31 @@ export default function Stage1({ playerName, onComplete, offlineMode }: { player
 
       setBuzzerState('READING');
       setCurrentIndex(v => v + 1);
-      setStatusMessage('Une nouvelle question se prépare...');
+      const nextPts = Math.min(4, qualified + 1);
+      setStatusMessage(`Question à ${nextPts} point${nextPts > 1 ? 's' : ''} en cours de lecture...`);
       return currentPlayers;
+    });
+  };
+
+  const handleFastForwardQualifiers = () => {
+    setPlayers(currentPlayers => {
+      const remainingSpots = 4 - qualifiedRankings.length;
+      if (remainingSpots <= 0) return currentPlayers;
+      
+      const unrankedAis = currentPlayers
+        .filter(p => !qualifiedRankings.includes(p.name))
+        .sort((a, b) => b.points - a.points);
+      
+      const autoQualifiers = unrankedAis.slice(0, remainingSpots).map(a => a.name);
+      const finalRanks = [...qualifiedRankings, ...autoQualifiers];
+      setQualifiedRankings(finalRanks);
+      setBuzzerState('ROUND_END');
+      setStatusMessage('Manche terminée ! Nous tenons nos 4 qualifiés !');
+
+      return currentPlayers.map(p => ({
+        ...p,
+        isQualified: finalRanks.includes(p.name) ? true : p.isQualified
+      }));
     });
   };
 
@@ -647,24 +696,40 @@ export default function Stage1({ playerName, onComplete, offlineMode }: { player
       
       {/* Qualification Spots Tracker Header */}
       <div className="w-full max-w-xl text-center mb-2 md:mb-5">
-        <div className="inline-block px-3 py-0.5 md:py-1 bg-slate-900/80 border border-slate-700 rounded-full mb-1.5 md:mb-3 text-[9px] md:text-[10px] font-black uppercase tracking-[0.25em] text-slate-300">
-          Places de qualification : <span className="text-amber-accent font-black text-xs">{qualifiedRankings.length} / 4</span> pour la finale
+        <div className="inline-flex flex-wrap items-center justify-center gap-2 mb-1.5 md:mb-3">
+          <div className="px-3 py-0.5 md:py-1 bg-slate-900/80 border border-slate-700 rounded-full text-[9px] md:text-[10px] font-black uppercase tracking-[0.25em] text-slate-300">
+            Places : <span className="text-amber-accent font-black text-xs">{qualifiedRankings.length} / 4</span> qualifiés
+          </div>
+          <div className={cn(
+            "px-3 py-0.5 md:py-1 rounded-full text-[9px] md:text-[10px] font-black uppercase tracking-wider border flex items-center gap-1.5 transition-all shadow-sm",
+            currentQuestionPoints === 1
+              ? "bg-slate-800/90 text-slate-300 border-slate-700"
+              : currentQuestionPoints === 2
+              ? "bg-blue-500/20 text-blue-300 border-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.2)]"
+              : currentQuestionPoints === 3
+              ? "bg-purple-500/20 text-purple-300 border-purple-400 shadow-[0_0_10px_rgba(168,85,247,0.2)]"
+              : "bg-amber-500/25 text-amber-300 border-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.3)] animate-pulse"
+          )}>
+            <span>Questions à <strong className="text-white text-xs">{currentQuestionPoints}</strong> {currentQuestionPoints > 1 ? 'points' : 'point'}</span>
+          </div>
         </div>
         <div className="flex justify-center gap-1.5 md:gap-2">
           {Array.from({ length: 4 }).map((_, i) => {
             const qualifiedName = qualifiedRankings[i];
             const isFilled = !!qualifiedName;
+            const pointsRuleLabel = i === 0 ? "1re place (-> +2 pts)" : i === 1 ? "2e place (-> +3 pts)" : i === 2 ? "3e place (-> +4 pts)" : "4e place (Finale)";
             return (
               <div 
                 key={i} 
                 className={cn(
-                  "px-2 md:px-3 py-1 md:py-1.5 rounded-sm border flex items-center justify-center text-[9px] md:text-[10px] font-black tracking-tight uppercase min-w-[70px] sm:min-w-[85px] md:min-w-[100px] transition-all duration-300 truncate text-ellipsis",
+                  "px-2 md:px-3 py-1 md:py-1.5 rounded-sm border flex flex-col items-center justify-center text-[9px] md:text-[10px] font-black tracking-tight uppercase min-w-[70px] sm:min-w-[85px] md:min-w-[105px] transition-all duration-300 truncate text-ellipsis",
                   isFilled 
                     ? "bg-amber-400/10 border-amber-500 text-amber-accent shadow-[0_0_10px_rgba(245,158,11,0.2)]" 
                     : "bg-slate-950/40 border-slate-800 text-slate-600"
                 )}
               >
-                {isFilled ? `👑 ${qualifiedName}` : "Disponible..."}
+                <span>{isFilled ? `👑 ${qualifiedName}` : `Place ${i + 1}`}</span>
+                <span className="text-[7.5px] opacity-75 font-mono lowercase">{isFilled ? `${i + 1}${i === 0 ? 'er' : 'e'} qualifié` : pointsRuleLabel}</span>
               </div>
             );
           })}
@@ -721,12 +786,18 @@ export default function Stage1({ playerName, onComplete, offlineMode }: { player
                           ))}
                         </div>
                       ) : (
-                        <p className="text-[8.5px] md:text-[9px] text-green-400 font-black tracking-widest mt-0.5">QUALIFIÉ(E)</p>
+                        <p className="text-[8px] md:text-[8.5px] text-green-400 font-black tracking-wider mt-0.5">
+                          {qualifiedRankings.indexOf(p.name) >= 0 
+                            ? `${qualifiedRankings.indexOf(p.name) + 1}${qualifiedRankings.indexOf(p.name) === 0 ? 'er' : 'e'} qualifié(e)` 
+                            : 'QUALIFIÉ(E)'}
+                        </p>
                       )}
                     </div>
                   </div>
                   <div className="font-mono text-[10px] md:text-[11px] font-black italic select-none shrink-0 mt-0.5 md:mt-0">
-                    {p.isQualified ? "👑" : `${p.points}/9`}
+                    {p.isQualified 
+                      ? (qualifiedRankings.indexOf(p.name) >= 0 ? `👑 #${qualifiedRankings.indexOf(p.name) + 1}` : "👑") 
+                      : `${p.points}/9`}
                   </div>
                 </motion.div>
               );
@@ -775,7 +846,23 @@ export default function Stage1({ playerName, onComplete, offlineMode }: { player
                   <HelpCircle className="w-4 h-4 sm:w-5 sm:h-5 text-electric-blue" />
                 </div>
                 <div className="flex-1">
-                   <p className="text-[8px] sm:text-[9px] uppercase text-amber-accent/80 font-black mb-1 sm:mb-1.5 tracking-[0.3em]">{currentQ?.category || 'PROPHÈTES & ROIS'}</p>
+                   <div className="flex items-center justify-between gap-2 mb-1 sm:mb-1.5">
+                     <p className="text-[8px] sm:text-[9px] uppercase text-amber-accent/80 font-black tracking-[0.3em]">
+                       {currentQ?.category || 'PROPHÈTES & ROIS'}
+                     </p>
+                     <div className={cn(
+                       "px-2 sm:px-2.5 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black tracking-wider uppercase flex items-center gap-1 border shadow-xs transition-all",
+                       currentQuestionPoints === 1
+                         ? "bg-slate-800 text-slate-300 border-slate-700"
+                         : currentQuestionPoints === 2
+                         ? "bg-blue-500/20 text-blue-300 border-blue-400/60"
+                         : currentQuestionPoints === 3
+                         ? "bg-purple-500/20 text-purple-300 border-purple-400/60"
+                         : "bg-amber-500/25 text-amber-300 border-amber-400/80 animate-pulse"
+                     )}>
+                       <span>+{currentQuestionPoints} {currentQuestionPoints > 1 ? 'POINTS' : 'POINT'}</span>
+                     </div>
+                   </div>
                    <h4 className="text-base sm:text-lg md:text-xl font-sans text-white leading-relaxed italic font-bold tracking-tight">
                      "{currentQ?.question}"
                    </h4>
@@ -803,22 +890,51 @@ export default function Stage1({ playerName, onComplete, offlineMode }: { player
               {/* Interaction zone depending on state */}
               <div className="flex-1 flex flex-col items-center justify-center">
                 
-                {/* 1. Idle and Reading: Show buzzer */}
+                {/* 1. Idle and Reading: Show buzzer OR Waiting screen if human is already qualified */}
                 {buzzerState === 'READING' && (
-                  <div className="w-full text-center py-1 sm:py-2 flex flex-col items-center justify-center">
-                    <motion.button
-                      whileHover={{ scale: 1.06 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={handleHumanBuzz}
-                      className="w-28 h-28 sm:w-32 sm:h-32 rounded-full bg-gradient-to-tr from-red-600 via-red-500 to-red-400 shadow-xl shadow-red-500/20 active:shadow-inner border-4 border-white flex flex-col items-center justify-center relative cursor-cell metal-border transition-all animate-pulse"
-                    >
-                      <span className="text-black font-black font-sans text-xs sm:text-[13px] tracking-widest uppercase leading-tight">BUZZ</span>
-                      <span className="text-[7.5px] sm:text-[8px] text-red-950 font-black tracking-wider uppercase mt-0.5 sm:mt-1">CLIQUEZ</span>
-                    </motion.button>
-                    <p className="text-[9px] sm:text-[10px] uppercase font-black text-slate-500 mt-2.5 sm:mt-4 tracking-[0.2em]">
-                      Astuce : pressez la touche <span className="text-slate-300 bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700">[ESPACE]</span> pour buzzer de votre clavier !
-                    </p>
-                  </div>
+                  isHumanQualified ? (
+                    <div className="w-full text-center py-2 sm:py-4 flex flex-col items-center justify-center">
+                      <div className="px-5 py-4 bg-gradient-to-b from-green-950/40 via-slate-900/70 to-slate-950/90 border-2 border-green-500/50 rounded-2xl max-w-md shadow-xl shadow-green-500/10 flex flex-col items-center gap-2">
+                        <div className="w-10 h-10 rounded-full bg-green-500/20 border border-green-400/60 flex items-center justify-center text-xl shadow-[0_0_15px_rgba(34,197,94,0.3)]">
+                          👑
+                        </div>
+                        <h4 className="font-sans font-black text-xs sm:text-sm uppercase text-green-400 tracking-wider">
+                          Vous êtes qualifié(e) !
+                        </h4>
+                        <p className="text-[11px] sm:text-xs text-slate-300 text-center leading-relaxed">
+                          Bravo, vos 9 points sont validés ! Vous ne participez plus aux buzzers de cette manche et vous attendez le début de la section <strong className="text-amber-accent">4 à la suite</strong>.
+                        </p>
+                        <div className="inline-flex items-center gap-1.5 text-[9px] sm:text-[10px] text-slate-300 uppercase tracking-widest font-black mt-1 bg-slate-900/90 px-3 py-1 rounded-full border border-slate-700">
+                          <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
+                          En attente des autres qualifiés ({qualifiedRankings.length}/4)
+                        </div>
+                        {qualifiedRankings.length < 4 && (
+                          <button
+                            onClick={handleFastForwardQualifiers}
+                            className="mt-2 px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 rounded-lg text-amber-300 text-[10px] sm:text-[11px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-md hover:scale-105 active:scale-95 cursor-pointer"
+                          >
+                            <FastForward className="w-3.5 h-3.5 text-amber-400" />
+                            <span>Passer directement au 4 à la suite</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="w-full text-center py-1 sm:py-2 flex flex-col items-center justify-center">
+                      <motion.button
+                        whileHover={{ scale: 1.06 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={handleHumanBuzz}
+                        className="w-28 h-28 sm:w-32 sm:h-32 rounded-full bg-gradient-to-tr from-red-600 via-red-500 to-red-400 shadow-xl shadow-red-500/20 active:shadow-inner border-4 border-white flex flex-col items-center justify-center relative cursor-cell metal-border transition-all animate-pulse"
+                      >
+                        <span className="text-black font-black font-sans text-xs sm:text-[13px] tracking-widest uppercase leading-tight">BUZZ</span>
+                        <span className="text-[7.5px] sm:text-[8px] text-red-950 font-black tracking-wider uppercase mt-0.5 sm:mt-1">CLIQUEZ</span>
+                      </motion.button>
+                      <p className="text-[9px] sm:text-[10px] uppercase font-black text-slate-500 mt-2.5 sm:mt-4 tracking-[0.2em]">
+                        Astuce : pressez la touche <span className="text-slate-300 bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700">[ESPACE]</span> pour buzzer de votre clavier !
+                      </p>
+                    </div>
+                  )
                 )}
 
                 {/* 2. Human typing his guess */}
