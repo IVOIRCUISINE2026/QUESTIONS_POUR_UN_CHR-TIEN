@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Clock, Loader2, BookOpen, Check, X, SkipForward, ArrowRight, Sparkles, HelpCircle, User, Award, Trophy, WifiOff } from 'lucide-react';
+import { Clock, Loader2, BookOpen, Check, X, SkipForward, ArrowRight, Sparkles, HelpCircle, User, Award, Trophy } from 'lucide-react';
 import { Question } from '../types';
 import { useAudio } from './AudioEngine';
 import { cn, getAskedQuestions, addAskedQuestion } from '../lib/utils';
@@ -1121,11 +1121,6 @@ export default function Stage2({ playerName, onComplete, offlineMode }: { player
 
     return (
       <div className="z-10 w-full max-w-4xl text-center px-4 py-4 flex flex-col items-center">
-        {wasOfflineUsed && (
-          <div className="w-full max-w-xl mx-auto mb-4 bg-amber-500/10 border border-amber-500/30 p-2.5 rounded-lg flex items-center justify-center gap-2 text-xs text-amber-accent font-black uppercase tracking-wider animate-pulse">
-            <WifiOff className="w-4 h-4 text-amber-accent" /> mode hors-ligne actif (Données locales)
-          </div>
-        )}
         <h2 className="text-amber-accent text-[8px] uppercase tracking-[0.4em] font-black mb-1">MANCHE 2 : LE 4 À LA SUITE</h2>
         <h3 className="text-xl md:text-2xl font-serif italic font-bold mb-4 text-white uppercase tracking-tight">
           {selectionStep < 4 ? "La Grille des Thèmes" : "Lancement de la Manche"}
@@ -1367,11 +1362,6 @@ export default function Stage2({ playerName, onComplete, offlineMode }: { player
 
   return (
     <div className="z-10 w-full px-2 max-w-5xl">
-      {wasOfflineUsed && (
-        <div className="w-full max-w-xl mx-auto mb-4 bg-amber-500/10 border border-amber-500/30 p-2.5 rounded-lg flex items-center justify-center gap-2 text-xs text-amber-accent font-black uppercase tracking-wider animate-pulse">
-          <WifiOff className="w-4 h-4 text-amber-accent" /> mode hors-ligne actif (Données locales)
-        </div>
-      )}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-start">
         
         {/* Participant standing table on the side */}

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Loader2, Zap, ShieldAlert, CheckCircle2, XCircle, RotateCcw, Clock, Sparkles, WifiOff } from 'lucide-react';
+import { Loader2, Zap, ShieldAlert, CheckCircle2, XCircle, RotateCcw, Clock, Sparkles } from 'lucide-react';
 import { Question, FaceOffQuestion } from '../types';
 import { useAudio } from './AudioEngine';
 import { cn, getAskedQuestions, addAskedQuestion } from '../lib/utils';
@@ -429,11 +429,6 @@ export default function Stage3({ onComplete, playerName, opponentName, opponentC
 
   return (
     <div className="z-10 w-full px-2 flex flex-col items-center max-w-3xl">
-      {wasOfflineUsed && (
-        <div className="w-full max-w-xl mx-auto mb-4 bg-amber-500/10 border border-amber-500/30 p-2.5 rounded-lg flex items-center justify-center gap-2 text-xs text-amber-accent font-black uppercase tracking-wider animate-pulse">
-          <WifiOff className="w-4 h-4 text-amber-accent" /> mode hors-ligne actif (Données locales)
-        </div>
-      )}
       {/* Competitors Header */}
       <div className="w-full grid grid-cols-3 items-center justify-between mb-8 px-4 gap-4">
         {/* Player Score */}

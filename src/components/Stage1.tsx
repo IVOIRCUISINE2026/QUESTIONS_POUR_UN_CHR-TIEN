@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Check, X, Loader2, HelpCircle, Trophy, Award, Sparkles, Volume2, WifiOff, FastForward } from 'lucide-react';
+import { Check, X, Loader2, HelpCircle, Trophy, Award, Sparkles, Volume2, FastForward } from 'lucide-react';
 import { Question } from '../types';
 import { useAudio } from './AudioEngine';
 import { cn, getAskedQuestions, addAskedQuestion } from '../lib/utils';
@@ -687,13 +687,6 @@ export default function Stage1({ playerName, onComplete, offlineMode }: { player
 
   return (
     <div className="w-full z-10 flex flex-col items-center">
-      
-      {wasOfflineUsed && (
-        <div className="w-full max-w-xl mx-auto mb-4 bg-amber-500/10 border border-amber-500/30 p-2.5 rounded-lg flex items-center justify-center gap-2 text-xs text-amber-accent font-black uppercase tracking-wider animate-pulse">
-          <WifiOff className="w-4 h-4 text-amber-accent" /> mode hors-ligne actif (Données locales)
-        </div>
-      )}
-      
       {/* Qualification Spots Tracker Header */}
       <div className="w-full max-w-xl text-center mb-2 md:mb-5">
         <div className="inline-flex flex-wrap items-center justify-center gap-2 mb-1.5 md:mb-3">
